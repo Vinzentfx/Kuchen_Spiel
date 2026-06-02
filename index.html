@@ -496,6 +496,29 @@
   <div class="admin-sep"></div>
 
   <div class="admin-section">
+    <div class="admin-section-title">👥 Andere Spieler (Firebase)</div>
+    <div class="admin-row">
+      <input class="admin-input" id="admin-player-name" type="text" placeholder="Spielername" maxlength="20"
+             autocomplete="off" autocorrect="off" spellcheck="false" />
+    </div>
+    <div class="admin-row" style="margin-top:8px">
+      <input class="admin-input" id="admin-player-score-val" type="number" placeholder="Score Wert" />
+      <button class="admin-btn highlight" id="admin-give-score">🏆 Setzen</button>
+    </div>
+    <div class="admin-grid" style="margin-top:8px">
+      <button class="admin-btn success" data-remote-badge="speedrunner">⚡ Speedrunner</button>
+      <button class="admin-btn success" data-remote-badge="aimlabs_master">🧠 Aimlabs Master</button>
+      <button class="admin-btn success" data-remote-badge="georg_destroyer">💥 Georg Destroyer</button>
+      <button class="admin-btn success" data-remote-badge="er_schlaft_nie">😈 Er schläft nie</button>
+    </div>
+    <div class="admin-grid" style="margin-top:8px">
+      <button class="admin-btn danger" id="admin-delete-player">🗑️ Spieler löschen</button>
+    </div>
+  </div>
+
+  <div class="admin-sep"></div>
+
+  <div class="admin-section">
     <div class="admin-section-title">💣 Danger Zone</div>
     <div class="admin-grid">
       <button class="admin-btn danger" id="admin-reset-all">🔥 Alles löschen</button>
@@ -638,10 +661,10 @@ function markDiscovered(src) {
   d.add(src); localStorage.setItem('buttDiscovered', JSON.stringify([...d]));
 }
 
-// ── Evil Philipp mode (2–4 Uhr nachts) ──
+// ── Evil Philipp mode (2–4 Uhr nachts, oder per Admin erzwungen) ──
 function isPhilippHour() {
   const h = new Date().getHours();
-  return h >= 2 && h < 4;
+  return (h >= 2 && h < 4) || localStorage.getItem('buttForcePhilipp')==='1';
 }
 let philippMode = false;
 
@@ -1480,6 +1503,9 @@ async function fbSubmitProfile(name){
   const key=fbKey(name);let existing={};
   try{const r=await fetch(`${FIREBASE_URL}/profiles/${key}.json`);if(r.ok){const d=await r.json();if(d)existing=d;}}catch(e){}
   const localBadges = JSON.parse(localStorage.getItem('buttBadges')||'[]');
+  // merge local + Firebase badges so nothing is lost across devices
+  const mergedBadges = [...new Set([...localBadges, ...(existing.badges||[])])];
+  localStorage.setItem('buttBadges', JSON.stringify(mergedBadges));
   const profile={
     name,
     score:Math.max(parseInt(localStorage.getItem('buttBest')||'0'),existing.score||0),
@@ -1489,7 +1515,7 @@ async function fbSubmitProfile(name){
     games:Math.max(parseInt(localStorage.getItem('buttGames')||'0'),existing.games||0),
     yahuTotal:Math.max(parseInt(localStorage.getItem('buttYahuTotal')||'0'),existing.yahuTotal||0),
     longestGame:Math.max(parseFloat(localStorage.getItem('buttLongestGame')||'0'),existing.longestGame||0),
-    badges:localBadges,
+    badges:mergedBadges,
   };
   await fetch(`${FIREBASE_URL}/profiles/${key}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(profile)});
 }
@@ -1729,12 +1755,68 @@ tapBtn(document.getElementById('admin-reset-loss'), () => {
   adminToast('↩️ Loss-Streak auf 0 zurückgesetzt');
 });
 
-// Hook force-philipp into isPhilippHour
-const _origPhilippHour = isPhilippHour;
-// override so forced mode is respected
-window.isPhilippHour = function() {
-  return _origPhilippHour() || localStorage.getItem('buttForcePhilipp')==='1';
-};
+// ── Admin: andere Spieler via Firebase ──
+function adminPlayerName() {
+  const n = document.getElementById('admin-player-name').value.trim();
+  if (!n) { adminToast('❌ Spielername eingeben'); return null; }
+  return n;
+}
+
+tapBtn(document.getElementById('admin-give-score'), async () => {
+  const name = adminPlayerName(); if (!name) return;
+  const val = parseInt(document.getElementById('admin-player-score-val').value);
+  if (isNaN(val) || val < 0) { adminToast('❌ Ungültiger Score'); return; }
+  try {
+    const key = fbKey(name);
+    await fetch(`${FIREBASE_URL}/scores/${key}.json`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, score: val})
+    });
+    // auch Profil-Score aktualisieren
+    const pr = await fetch(`${FIREBASE_URL}/profiles/${key}.json`);
+    const ex = pr.ok ? await pr.json() : null;
+    if (ex) {
+      await fetch(`${FIREBASE_URL}/profiles/${key}.json`, {
+        method:'PATCH', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({score: val})
+      });
+    }
+    adminToast(`✅ Score von ${name} → ${val}`);
+  } catch(e) { adminToast('❌ Firebase Fehler'); }
+});
+
+tapBtn(document.getElementById('admin-delete-player'), async () => {
+  const name = adminPlayerName(); if (!name) return;
+  try {
+    const key = fbKey(name);
+    await fetch(`${FIREBASE_URL}/scores/${key}.json`,   {method:'DELETE'});
+    await fetch(`${FIREBASE_URL}/profiles/${key}.json`, {method:'DELETE'});
+    const wk = getWeekKey();
+    await fetch(`${FIREBASE_URL}/weekly/${wk}/${key}.json`, {method:'DELETE'});
+    adminToast(`🗑️ ${name} komplett gelöscht`);
+  } catch(e) { adminToast('❌ Firebase Fehler'); }
+});
+
+document.querySelectorAll('.admin-btn[data-remote-badge]').forEach(btn => {
+  async function give() {
+    const name = adminPlayerName(); if (!name) return;
+    const id = btn.dataset.remoteBadge;
+    try {
+      const key = fbKey(name);
+      const r = await fetch(`${FIREBASE_URL}/profiles/${key}.json`);
+      const ex = r.ok ? await r.json() : null;
+      const badges = [...new Set([...(ex?.badges||[]), id])];
+      await fetch(`${FIREBASE_URL}/profiles/${key}.json`, {
+        method: ex ? 'PATCH' : 'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({badges})
+      });
+      adminToast(`✅ Badge → ${name}`);
+    } catch(e) { adminToast('❌ Firebase Fehler'); }
+  }
+  btn.addEventListener('click', give);
+  btn.addEventListener('touchend', e=>{ e.preventDefault(); give(); }, {passive:false});
+});
 
 async function showProfileFrom(name,from){
   profileScreen._from=from;
@@ -1754,6 +1836,7 @@ async function showProfileFrom(name,from){
       speedrunner:    '⚡ Speedrunner',
       aimlabs_master: '🧠 Aimlabs Master',
       georg_destroyer:'💥 Georg Destroyer',
+      er_schlaft_nie: '😈 Er schläft nie',
     };
     const rows=[
       ['🏆 Highscore',p.score||0,true],
