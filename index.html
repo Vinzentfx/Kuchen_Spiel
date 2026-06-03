@@ -1497,7 +1497,7 @@ function showStats(){
     ['👆 Taps gesamt',totalTaps,false],
     ['📈 Durchschnitt',avg+'/Runde',false],
     ['🔥 Längste Kombo',longestStreak+'x',false],
-    ['📸 Fotos gesammelt',`${getDiscovered().size} / ${IMAGES.length + 2}`,true],
+    ['📸 Fotos gesammelt',`${getDiscovered().size} / ${IMAGES.length + 1}`,true],
     ['⏱️ Längste Runde',longestGame+'s',false],
     ['🥶 Big Yahu Blessings',yahuTotal,false],
   ];
@@ -1630,7 +1630,7 @@ function showSammlung(tab){
     const discovered=getDiscovered();
     const hasPhilipp=discovered.has(PHILIPP_IMG);
     const regularGrid=`
-      <div style="font-size:13px;color:rgba(255,255,255,0.3);text-align:center;margin-bottom:6px">${discovered.size} / ${IMAGES.length + 2} entdeckt</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.3);text-align:center;margin-bottom:6px">${discovered.size} / ${IMAGES.length + 1} entdeckt</div>
       <div class="sam-grid">`+
       IMAGES.filter(src=>src!==SPECIAL_IMG).map(src=>{
         const found=discovered.has(src);
