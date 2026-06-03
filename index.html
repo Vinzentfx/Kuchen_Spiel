@@ -48,8 +48,9 @@
       text-shadow:0 2px 8px #000; pointer-events:none; padding:0 20px; }
 
     /* Butts */
-    .butt-el { position:absolute; cursor:pointer; line-height:1;
-      filter:drop-shadow(0 0 12px rgba(255,105,180,0.7)); touch-action:manipulation; }
+    .butt-el { position:absolute; cursor:pointer; line-height:1; left:0; top:0;
+      filter:drop-shadow(0 0 12px rgba(255,105,180,0.7)); touch-action:manipulation;
+      will-change:transform; }
     .butt-el img { display:block; pointer-events:none; border-radius:8px; }
     .butt-el.bonked { animation:bonk 0.15s ease-out; }
     @keyframes bonk { 0%{transform:scale(1) rotate(0)} 50%{transform:scale(1.5) rotate(20deg)} 100%{transform:scale(1) rotate(0)} }
@@ -716,8 +717,13 @@ const DAILY_IMG   = IMAGES[DAILY_IDX];
 let imgIndex = 0;
 let currentImgSrc = ''; // nur noch für nextImage intern genutzt
 
+function setElSize(el, size) {
+  el.style.width  = size + 'px';
+  el.style.height = size + 'px';
+}
 function applySkin(el, size) {
   el.style.fontSize = '';
+  setElSize(el, size);
   const src = IMAGES[imgIndex % IMAGES.length];
   el._imgSrc = src;
   el.innerHTML = `<img src="${src}" width="${size}" height="${size}" alt=""
@@ -725,6 +731,7 @@ function applySkin(el, size) {
     onerror="this.parentElement.innerHTML='<span style=\\'font-size:${size}px;line-height:1\\'>🍑</span>'">`;
 }
 function nextImage(el, size, forcePhilipp=false) {
+  setElSize(el, size);
   if (philippMode || forcePhilipp) {
     el._imgSrc = PHILIPP_IMG;
     el.classList.remove('golden');
@@ -962,7 +969,7 @@ function dailySound() {
 
 // ── Helpers ──
 function getSize() { return {w:window.innerWidth,h:window.innerHeight}; }
-function setPos(b) { b.el.style.left=b.x+'px'; b.el.style.top=b.y+'px'; }
+function setPos(b) { b.el.style.transform=`translate(${b.x}px,${b.y}px)`; }
 function randomV(speed) { const a=Math.random()*Math.PI*2; return {vx:Math.cos(a)*speed,vy:Math.sin(a)*speed}; }
 function getSpeed() { return 2.5+score*0.06+(GAME_DURATION-timeLeft)*0.05; }
 function getButtSize(s) { return Math.max(50,120-Math.floor(s/10)*5); }
