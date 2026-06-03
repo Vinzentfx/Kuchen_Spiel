@@ -52,7 +52,7 @@
       filter:drop-shadow(0 0 12px rgba(255,105,180,0.7)); touch-action:manipulation;
       will-change:transform; }
     .butt-el img { display:block; pointer-events:none; border-radius:8px; }
-    .butt-el.bonked { animation:bonk 0.15s ease-out; }
+    .butt-el.bonked img { animation:bonk 0.15s ease-out; }
     @keyframes bonk { 0%{transform:scale(1) rotate(0)} 50%{transform:scale(1.5) rotate(20deg)} 100%{transform:scale(1) rotate(0)} }
     .butt-el.frozen { filter:drop-shadow(0 0 14px #88ddff) brightness(1.4); }
     .butt-el.golden { filter:drop-shadow(0 0 20px #ffd700) drop-shadow(0 0 8px #ff8800) brightness(1.2); animation:goldPulse 0.7s ease-in-out infinite alternate; }
@@ -1071,11 +1071,12 @@ function tryYahuBlessing() {
   localStorage.setItem('buttYahuTotal',prev+1);
   yahuSound();
   flashEl(document.getElementById('yahu-flash'));
-  const nb=createButt(56,false);
+  const sz=getButtSize(score);
+  const nb=createButt(sz,false);
   nb.active=true;
   const{w,h}=getSize();
-  nb.x=Math.random()*(w-56);nb.y=Math.random()*(h-160)+70;
-  nextImage(nb.el,56);
+  nb.x=Math.random()*(w-sz);nb.y=Math.random()*(h-sz-80)+70;
+  nextImage(nb.el,sz);
   const v=randomV(getSpeed()*1.3);nb.vx=v.vx;nb.vy=v.vy;
   setPos(nb);
   nb.el.style.display='block';
@@ -1211,9 +1212,10 @@ gameEl.addEventListener('mousedown',e=>{if(!running)return;checkMiss(e.clientX,e
 
 // ── Second butt ──
 function activateButt2(){
-  b2.active=true;b2.size=56;
-  const{w,h}=getSize();b2.x=Math.random()*(w-56);b2.y=Math.random()*(h-160)+70;
-  nextImage(b2.el,56);
+  const sz=getButtSize(score);
+  b2.active=true;b2.size=sz;
+  const{w,h}=getSize();b2.x=Math.random()*(w-sz);b2.y=Math.random()*(h-sz-80)+70;
+  nextImage(b2.el,sz);
   setPos(b2);
   b2.el.style.display='block';
   const v=randomV(getSpeed()*1.2);b2.vx=v.vx;b2.vy=v.vy;
