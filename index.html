@@ -1681,7 +1681,8 @@ let adminUpCount = 0, adminUpTimer = null;
 let adminUpTouchCount = 0, adminUpTouchTimer = null;
 
 function openAdmin() {
-  // hide whatever screen is visible
+  const pw = prompt('🔐 Admin Passwort:');
+  if (pw !== 'tapthebuttpasswort') { alert('❌ Falsches Passwort'); return; }
   [startScreen,gameoverScreen,lbScreen,statsScreen,profileScreen,
    document.getElementById('sammlung-screen')]
     .forEach(s => s.style.display='none');
