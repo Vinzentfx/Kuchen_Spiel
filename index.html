@@ -1064,13 +1064,14 @@ function tryYahuBlessing() {
   localStorage.setItem('buttYahuTotal',prev+1);
   yahuSound();
   flashEl(document.getElementById('yahu-flash'));
-  const nb=createButt(56,true);
+  const nb=createButt(56,false);
   const{w,h}=getSize();
   nb.x=Math.random()*(w-56);nb.y=Math.random()*(h-160)+70;
   nb.el.style.width='56px';nb.el.style.height='56px';
-  nextImage(nb.el,56);nb.el.style.display='block';
+  nextImage(nb.el,56);
   const v=randomV(getSpeed()*1.3);nb.vx=v.vx;nb.vy=v.vy;
   setPos(nb);
+  nb.el.style.display='block';
 }
 
 // ── Georg explosion ──
@@ -1205,7 +1206,8 @@ gameEl.addEventListener('mousedown',e=>{if(!running)return;checkMiss(e.clientX,e
 function activateButt2(){
   b2.active=true;b2.size=56;
   const{w,h}=getSize();b2.x=Math.random()*(w-56);b2.y=Math.random()*(h-160)+70;
-  b2.el.style.cssText+=';width:56px;height:56px;min-width:56px;min-height:56px;';
+  b2.el.style.width='56px';
+  b2.el.style.height='56px';
   nextImage(b2.el,56);
   setPos(b2);
   b2.el.style.display='block';
