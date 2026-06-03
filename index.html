@@ -1053,7 +1053,8 @@ function tryYahuBlessing() {
   const nb=createButt(56,true);
   const{w,h}=getSize();
   nb.x=Math.random()*(w-56);nb.y=Math.random()*(h-160)+70;
-  applySkin(nb.el,56);nb.el.style.display='block';
+  nb.el.style.width='56px';nb.el.style.height='56px';
+  nextImage(nb.el,56);nb.el.style.display='block';
   const v=randomV(getSpeed()*1.3);nb.vx=v.vx;nb.vy=v.vy;
   setPos(nb);
 }
@@ -1188,7 +1189,8 @@ gameEl.addEventListener('mousedown',e=>{if(!running)return;checkMiss(e.clientX,e
 function activateButt2(){
   b2.active=true;b2.size=56;
   const{w,h}=getSize();b2.x=Math.random()*(w-56);b2.y=Math.random()*(h-160)+70;
-  applySkin(b2.el,56);b2.el.style.display='block';
+  b2.el.style.width='56px';b2.el.style.height='56px';
+  nextImage(b2.el,56);b2.el.style.display='block';
   const v=randomV(getSpeed()*1.2);b2.vx=v.vx;b2.vy=v.vy;
   const f=document.createElement('div');
   f.style.cssText='position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);font-size:28px;color:#ffd700;font-weight:900;text-align:center;pointer-events:none;z-index:60;text-shadow:0 0 20px #ffa500';
