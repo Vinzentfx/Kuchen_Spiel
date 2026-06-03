@@ -355,6 +355,17 @@
     .admin-toast { font-size:13px; color:#88ffcc; text-align:center; min-height:18px; }
     .admin-sep { width:100%; height:1px; background:rgba(255,255,255,0.08); margin:2px 0; }
 
+    /* Volume slider */
+    .volume-row { display:flex; align-items:center; gap:10px; width:100%; max-width:280px; }
+    .volume-row span { font-size:20px; }
+    .volume-slider { flex:1; -webkit-appearance:none; appearance:none; height:6px;
+      border-radius:3px; background:rgba(255,255,255,0.2); outline:none; cursor:pointer; }
+    .volume-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px;
+      border-radius:50%; background:linear-gradient(135deg,#ff69b4,#ff1493);
+      box-shadow:0 0 8px rgba(255,20,147,0.5); cursor:pointer; }
+    .volume-slider::-moz-range-thumb { width:22px; height:22px; border:none;
+      border-radius:50%; background:linear-gradient(135deg,#ff69b4,#ff1493); cursor:pointer; }
+
     /* Suggestion card in admin */
     .suggest-card { background:rgba(255,255,255,0.07); border-radius:14px; padding:10px; display:flex; gap:10px; align-items:flex-start; }
     .suggest-card img { width:72px; height:72px; border-radius:10px; object-fit:cover; flex-shrink:0; }
@@ -403,6 +414,11 @@
     <div class="pu-item"><span>⏱️</span>+5 Sekunden</div>
     <div class="pu-item"><span>💣</span>SONNENCREME!</div>
   </div>
+  <div class="volume-row">
+    <span>🔇</span>
+    <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.5" />
+    <span>🔊</span>
+  </div>
   <button class="btn" id="start-btn">Los gehts!</button>
   <button class="btn secondary" id="lb-btn-start">🏆 Leaderboard</button>
   <button class="btn secondary" id="sammlung-btn-start">📸 Sammlung</button>
@@ -439,6 +455,7 @@
          autocomplete="off" autocorrect="off" spellcheck="false" />
   <button class="btn" id="submit-btn">Abgeben 🏆</button>
   <button class="btn secondary" id="play-again-btn">Nochmal</button>
+  <button class="btn secondary" id="home-btn">🏠 Hauptmenü</button>
 </div>
 
 <!-- LEADERBOARD (tabbed: All-Time + Diese Woche) -->
@@ -876,6 +893,13 @@ applySkin(b2.el, 56);
 
 // ── Audio ──
 let _audioCtx = null;
+let _volume = parseFloat(localStorage.getItem('buttVolume') ?? '0.5');
+document.getElementById('volume-slider').value = _volume;
+document.getElementById('volume-slider').addEventListener('input', function() {
+  _volume = parseFloat(this.value);
+  localStorage.setItem('buttVolume', _volume);
+});
+
 function getAudioCtx() {
   if (!_audioCtx) _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
   if (_audioCtx.state === 'suspended') _audioCtx.resume();
@@ -904,7 +928,7 @@ function fartSound(pitch=1) {
     const d=buf.getChannelData(0);
     for(let i=0;i<d.length;i++){const t=i/ctx.sampleRate;d[i]=Math.sin(2*Math.PI*(pitch*(80+Math.random()*40)-t*120)*t)*Math.exp(-t*8)*(Math.random()*0.4+0.6);}
     const src=ctx.createBufferSource();src.buffer=buf;
-    const g=ctx.createGain();g.gain.setValueAtTime(0.3,now);
+    const g=ctx.createGain();g.gain.setValueAtTime(0.3*_volume,now);
     src.connect(g);g.connect(ctx.destination);src.start(now);
   }catch(e){}
 }
@@ -912,7 +936,7 @@ function beepSound(freq=440,type='sine',dur=0.15) {
   try {
     const ctx=getAudioCtx(),now=ctx.currentTime;
     const o=ctx.createOscillator();o.type=type;o.frequency.value=freq;
-    const g=ctx.createGain();g.gain.setValueAtTime(0.2,now);g.gain.exponentialRampToValueAtTime(0.001,now+dur);
+    const g=ctx.createGain();g.gain.setValueAtTime(0.2*_volume,now);g.gain.exponentialRampToValueAtTime(0.001,now+dur);
     o.connect(g);g.connect(ctx.destination);o.start(now);o.stop(now+dur);
   }catch(e){}
 }
@@ -921,7 +945,7 @@ function georgSound() {
     const ctx=getAudioCtx(),now=ctx.currentTime;
     [80,120,60].forEach((f,i)=>{
       const o=ctx.createOscillator();o.type='sawtooth';o.frequency.value=f;
-      const g=ctx.createGain();g.gain.setValueAtTime(0,now+i*0.06);g.gain.linearRampToValueAtTime(0.35,now+i*0.06+0.04);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.06+0.35);
+      const g=ctx.createGain();g.gain.setValueAtTime(0,now+i*0.06);g.gain.linearRampToValueAtTime(0.35*_volume,now+i*0.06+0.04);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.06+0.35);
       o.connect(g);g.connect(ctx.destination);o.start(now+i*0.06);o.stop(now+i*0.06+0.4);
     });
     setTimeout(()=>beepSound(900,'square',0.08),50);
@@ -932,7 +956,7 @@ function aimlabsSound() {
     const ctx=getAudioCtx(),now=ctx.currentTime;
     const o=ctx.createOscillator();o.type='square';
     o.frequency.setValueAtTime(300,now);o.frequency.exponentialRampToValueAtTime(1200,now+0.3);
-    const g=ctx.createGain();g.gain.setValueAtTime(0.25,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.35);
+    const g=ctx.createGain();g.gain.setValueAtTime(0.25*_volume,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.35);
     o.connect(g);g.connect(ctx.destination);o.start(now);o.stop(now+0.35);
   }catch(e){}
 }
@@ -941,7 +965,7 @@ function yahuSound() {
     const ctx=getAudioCtx(),now=ctx.currentTime;
     [523,659,784,1047].forEach((f,i)=>{
       const o=ctx.createOscillator();o.type='sine';o.frequency.value=f;
-      const g=ctx.createGain();g.gain.setValueAtTime(0,now+i*0.1);g.gain.linearRampToValueAtTime(0.18,now+i*0.1+0.05);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.1+0.4);
+      const g=ctx.createGain();g.gain.setValueAtTime(0,now+i*0.1);g.gain.linearRampToValueAtTime(0.18*_volume,now+i*0.1+0.05);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.1+0.4);
       o.connect(g);g.connect(ctx.destination);o.start(now+i*0.1);o.stop(now+i*0.1+0.45);
     });
   }catch(e){}
@@ -951,7 +975,7 @@ function levelUpSound() {
     const ctx=getAudioCtx(),now=ctx.currentTime;
     [440,554,659,880].forEach((f,i)=>{
       const o=ctx.createOscillator();o.type='sine';o.frequency.value=f;
-      const g=ctx.createGain();g.gain.setValueAtTime(0,now+i*0.08);g.gain.linearRampToValueAtTime(0.22,now+i*0.08+0.04);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.08+0.3);
+      const g=ctx.createGain();g.gain.setValueAtTime(0,now+i*0.08);g.gain.linearRampToValueAtTime(0.22*_volume,now+i*0.08+0.04);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.08+0.3);
       o.connect(g);g.connect(ctx.destination);o.start(now+i*0.08);o.stop(now+i*0.08+0.35);
     });
   }catch(e){}
@@ -961,7 +985,7 @@ function dailySound() {
     const ctx=getAudioCtx(),now=ctx.currentTime;
     [880,1100,1320].forEach((f,i)=>{
       const o=ctx.createOscillator();o.type='sine';o.frequency.value=f;
-      const g=ctx.createGain();g.gain.setValueAtTime(0,now+i*0.07);g.gain.linearRampToValueAtTime(0.2,now+i*0.07+0.03);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.07+0.25);
+      const g=ctx.createGain();g.gain.setValueAtTime(0,now+i*0.07);g.gain.linearRampToValueAtTime(0.2*_volume,now+i*0.07+0.03);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.07+0.25);
       o.connect(g);g.connect(ctx.destination);o.start(now+i*0.07);o.stop(now+i*0.07+0.28);
     });
   }catch(e){}
@@ -1479,6 +1503,7 @@ function tapBtn(el,fn){el.addEventListener('click',fn);el.addEventListener('touc
 tapBtn(quitBtn,()=>{stopGame();startScreen.style.display='flex';});
 tapBtn(document.getElementById('start-btn'),startGame);
 tapBtn(document.getElementById('play-again-btn'),startGame);
+tapBtn(document.getElementById('home-btn'),()=>{gameoverScreen.style.display='none';startScreen.style.display='flex';});
 tapBtn(document.getElementById('lb-btn-start'),()=>showLeaderboard(''));
 tapBtn(document.getElementById('lb-back-btn'),()=>{lbScreen.style.display='none';startScreen.style.display='flex';});
 tapBtn(document.getElementById('sammlung-btn-start'),()=>showSammlung('fotos'));
