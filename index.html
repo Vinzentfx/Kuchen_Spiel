@@ -1161,6 +1161,8 @@ function onButtTap(e, b) {
     flashEl(document.getElementById('daily-flash'));
   }
 
+  if(isGeorg){sessionGeorgCount++;checkGeorgDestroyer();triggerGeorgExplosion(b);}
+
   const newSz=getButtSize(score);
   b.size=newSz; nextImage(b.el,newSz);
   if(score>=30&&!b2.active) activateButt2();
@@ -1168,11 +1170,9 @@ function onButtTap(e, b) {
   const{w,h}=getSize();
   b.x=Math.random()*(w-b.size);b.y=Math.random()*(h-b.size-80)+70;
   setPos(b);
-
   if(streak===25&&!aimlabsTriggeredAtStreak){triggerAimlabs();sessionAimlabsCount++;checkAimlabsMaster();}
   tryYahuBlessing();
   checkRivalGhost();
-  if(isGeorg){sessionGeorgCount++;checkGeorgDestroyer();triggerGeorgExplosion(b);}
 }
 
 // ── Miss detection ──
@@ -1632,7 +1632,7 @@ function showSammlung(tab){
     const regularGrid=`
       <div style="font-size:13px;color:rgba(255,255,255,0.3);text-align:center;margin-bottom:6px">${discovered.size} / ${IMAGES.length + 2} entdeckt</div>
       <div class="sam-grid">`+
-      IMAGES.map(src=>{
+      IMAGES.filter(src=>src!==SPECIAL_IMG).map(src=>{
         const found=discovered.has(src);
         return `<div class="sam-cell${found?'':' locked'}">${found?`<img src="${src}" loading="lazy">`:`<span style="font-size:22px">🔒</span>`}</div>`;
       }).join('')+`</div>`;
