@@ -714,32 +714,32 @@ const DAILY_IDX   = getDailyIndex();
 const DAILY_IMG   = IMAGES[DAILY_IDX];
 
 let imgIndex = 0;
-let currentImgSrc = '';
+let currentImgSrc = ''; // nur noch für nextImage intern genutzt
 
 function applySkin(el, size) {
   el.style.fontSize = '';
   const src = IMAGES[imgIndex % IMAGES.length];
+  el._imgSrc = src;
   el.innerHTML = `<img src="${src}" width="${size}" height="${size}" alt=""
     style="display:block;border-radius:12px;object-fit:cover;width:${size}px;height:${size}px"
     onerror="this.parentElement.innerHTML='<span style=\\'font-size:${size}px;line-height:1\\'>🍑</span>'">`;
 }
 function nextImage(el, size, forcePhilipp=false) {
   if (philippMode || forcePhilipp) {
-    imgIndex = IMAGES.indexOf(PHILIPP_IMG) >= 0 ? IMAGES.indexOf(PHILIPP_IMG) : 0;
-    currentImgSrc = PHILIPP_IMG;
+    el._imgSrc = PHILIPP_IMG;
     el.classList.remove('golden');
-    // manual set since applySkin uses imgIndex
     el.innerHTML = `<img src="${PHILIPP_IMG}" width="${size}" height="${size}" alt=""
       style="display:block;border-radius:12px;object-fit:cover;width:${size}px;height:${size}px">`;
     return;
   }
   let idx;
   do { idx = Math.floor(Math.random() * IMAGES.length); }
-  while (IMAGES[idx] === currentImgSrc && IMAGES.length > 1);
-  imgIndex = idx;
-  currentImgSrc = IMAGES[idx];
-  applySkin(el, size);
-  if (currentImgSrc === DAILY_IMG) el.classList.add('golden');
+  while (IMAGES[idx] === el._imgSrc && IMAGES.length > 1);
+  el._imgSrc = IMAGES[idx];
+  el.innerHTML = `<img src="${IMAGES[idx]}" width="${size}" height="${size}" alt=""
+    style="display:block;border-radius:12px;object-fit:cover;width:${size}px;height:${size}px"
+    onerror="this.parentElement.innerHTML='<span style=\\'font-size:${size}px;line-height:1\\'>🍑</span>'">`;
+  if (el._imgSrc === DAILY_IMG) el.classList.add('golden');
   else el.classList.remove('golden');
 }
 
@@ -874,7 +874,21 @@ function getAudioCtx() {
   if (_audioCtx.state === 'suspended') _audioCtx.resume();
   return _audioCtx;
 }
-document.addEventListener('touchstart', () => getAudioCtx(), { once: true });
+// iOS: AudioContext unlock bei erstem Touch/Click
+function unlockAudio() {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(() => {
+      // kurzer stiller Buffer damit iOS Audio komplett freischaltet
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.connect(ctx.destination); src.start(0);
+    });
+  }
+}
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('touchend',   unlockAudio, { once: true });
+document.addEventListener('click',      unlockAudio, { once: true });
 
 function fartSound(pitch=1) {
   try {
@@ -1079,6 +1093,7 @@ function triggerGeorgExplosion(b) {
     const st=document.createElement('style');
     st.textContent=`@keyframes ${aName}{0%{transform:translate(${ox.toFixed(1)}px,${oy.toFixed(1)}px) scale(0) rotate(0deg)}70%{transform:translate(0px,0px) scale(1.15) rotate(${rotDeg}deg)}100%{transform:translate(0px,0px) scale(1) rotate(${rotDeg}deg)}}`;
     document.head.appendChild(st);
+    setTimeout(()=>st.remove(), 4000);
     const mini=document.createElement('div');mini.className='georg-mini';
     mini.innerHTML=`<img src="${SPECIAL_IMG}" width="${sz}" height="${sz}" style="display:block;border-radius:50%;object-fit:cover;pointer-events:none">`;
     mini.style.cssText=`position:absolute;width:${sz}px;height:${sz}px;left:${fx}px;top:${fy}px;animation:${aName} 0.65s ease-out forwards;`;
@@ -1121,10 +1136,11 @@ function onButtTap(e, b) {
 
   showTapSpeed();
 
-  const isGeorg  = (currentImgSrc === SPECIAL_IMG);
-  const isDaily  = (currentImgSrc === DAILY_IMG);
+  const imgSrc = b.el._imgSrc || '';
+  const isGeorg  = (imgSrc === SPECIAL_IMG);
+  const isDaily  = (imgSrc === DAILY_IMG);
   const comboMult = getComboMult();
-  markDiscovered(currentImgSrc);
+  markDiscovered(imgSrc);
 
   let pts;
   if (aimlabsActive)        pts = 5;
